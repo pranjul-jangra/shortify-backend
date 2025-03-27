@@ -17,18 +17,13 @@ mongoose.connect(process.env.MONGO_URI)
 const urlSchema = new mongoose.Schema({
   originalUrl: { type: String, required: true },
   shortId: { type: String, unique: true, required: true },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  clickCount: { type: Number, default: 0 }
 });
 const URL = mongoose.model('URL', urlSchema);
 
 // -------------------------------------- Shorten URL Route ---------------------------------------
 app.post('/shorten', async (req, res) => {
-    URL.collection.dropIndex('shortUrl_1', (err) => {
-        if (err) {
-          console.error('Error dropping index:', err);
-        }
-    });
-
     try {
         const { originalUrl, customName } = req.body;
 
@@ -41,6 +36,10 @@ app.post('/shorten', async (req, res) => {
         }
     
         if (customName) {
+          if (!/^[a-zA-Z0-9_-]+$/.test(customName)) {
+            return res.status(400).json({ error: 'Invalid custom name format' });
+          }
+
           const existingUrl = await URL.findOne({ shortId: customName });
           if (existingUrl) {
             return res.status(400).json({ error: 'Provided name is already taken' });
@@ -90,7 +89,11 @@ app.get('/:shortId', async (req, res) => {
       return res.status(404).json({ error: 'Short URL not found' });
     }
 
+    urlEntry.clickCount = (urlEntry.clickCount || 0) + 1;
+    await urlEntry.save();
+
     res.redirect(urlEntry.originalUrl);
+    
   } catch (error) {
     res.status(500).json({ error: 'Server error, please try again' });
   }
