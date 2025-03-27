@@ -62,13 +62,23 @@ app.post('/shorten', async (req, res) => {
 
 // -------------------------------------- Get All Shortened URLs (Sorted by Time) ---------------------------------
 app.get('/all-urls', async (req, res) => {
-    try {
-      const urls = await URL.find().sort({ createdAt: -1 });
-      res.status(200).json({ urls });
-    } catch (error) {
-      res.status(500).json({ error: 'Server error, please try again' });
-    }
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const urls = await URL.find().sort({ createdAt: -1 }).skip(skip).limit(limit);
+    
+    const totalDocs = await URL.countDocuments();
+    const hasMore = skip + urls.length < totalDocs;
+
+    res.status(200).json({ urls, hasMore }); // Ensure `hasMore` is part of the response
+    
+  } catch (error) {
+    res.status(500).json({ error: 'Server error, please try again' });
+  }
 });
+
 
 // -------------------------------------- Redirect to Original URL ---------------------------------
 app.get('/:shortId', async (req, res) => {
