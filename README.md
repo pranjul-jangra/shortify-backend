@@ -16,5 +16,5 @@ Shortify Backend is a RESTful API built with Node.js and Express.js, providing U
 
 •  Database: MongoDB (Mongoose)
 
-•  Hosting: Render
+•  Hosting: Render / MongoDB Atlas
 
